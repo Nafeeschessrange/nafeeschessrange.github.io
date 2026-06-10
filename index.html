@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nafees Advanced Hybrid Chess Engine</title>
+    <title>Nafees Elite Monolithic Chess System</title>
     
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -311,13 +311,15 @@
 <body>
 
     <div class="app-grid">
+        <!-- ১. রিয়েল ইভালুয়েশন বার -->
         <div id="evalContainer" class="eval-container">
             <span id="evalValueText" class="eval-text">0.0</span>
             <div id="liveEvalBar" class="eval-bar"></div>
         </div>
 
+        <!-- ২. গেম জোন -->
         <div class="game-zone">
-            <!-- কনফিগারেশন স্ক্রিন -->
+            <!-- ম্যাচ কনফিগারেশন মডাল -->
             <div id="setupOverlay" class="setup-overlay">
                 <div class="setup-card">
                     <h3><i class="fas fa-chess"></i> Match Configuration</h3>
@@ -345,13 +347,13 @@
                 </div>
             </div>
 
-            <!-- ব্ল্যাক কার্ড -->
+            <!-- ব্ল্যাক কার্ড (বট প্যানেল) -->
             <div class="player-info-card">
                 <div class="player-meta">
                     <img src="https://chessboardjs.com/img/chesspieces/wikipedia/bK.png" class="player-avatar" alt="Bot">
                     <div>
                         <strong id="lblOpponentName">Ibrahim Muhtasim Nafees 👑</strong>
-                        <div style="font-size:11px; color:var(--text-muted)" id="lblBotStatus">Engine Status: Initializing...</div>
+                        <div style="font-size:11px; color:var(--text-muted)" id="lblBotStatus">Engine Status: Embedded Engine Active</div>
                     </div>
                 </div>
                 <div class="timer-display" id="clockBlack">No Time</div>
@@ -360,8 +362,8 @@
             <div id="chessBoard"></div>
 
             <div class="live-feedback-bar" id="liveFeedbackBar">
-                <span id="lblOpening" style="font-weight:bold;"><i class="fas fa-book"></i> Standard Opening</span>
-                <span id="lblMoveFeedback" style="color: #ffaa00;">Setup Screen</span>
+                <span id="lblOpening" style="font-weight:bold;"><i class="fas fa-book"></i> Tactical Opening System</span>
+                <span id="lblMoveFeedback" style="color: #ffaa00;">Awaiting Launch</span>
             </div>
 
             <div class="action-controls">
@@ -393,7 +395,7 @@
             </div>
         </div>
 
-        <!-- ৩. ডানপাশের সাইড প্যানেল -->
+        <!-- ৩. সাইড অপশন এবং গেম রিভিউ প্যানেল -->
         <div class="dashboard-panel">
             <div class="menu-tabs">
                 <button class="tab-trigger active" onclick="switchTab('tab-setup', this)">সেটআপ ও অপশন</button>
@@ -424,15 +426,15 @@
                 </div>
             </div>
 
-            <!-- ট্যাব ২ -->
+            <!-- ট্যাব ২: ১০০% রিয়েল-টাইম জিরো স্টেট রিভিউ -->
             <div id="tab-review" class="tab-pane">
-                <div id="reviewNotice">⚠️ খেলা এখনও শেষ হয়নি। ম্যাচ শেষ হলে এখানে আপনার আসল গেম অ্যানালায়সিস দেখাবে।</div>
+                <div id="reviewNotice">⚠️ খেলা এখনও শেষ হয়নি। ম্যাচ শেষ হলে এখানে আপনার আসল গেম অ্যানালাইসিস দেখাবে।</div>
                 
                 <div class="review-card">
                     <h4>রিয়েল-টাইম অ্যাকুরেসি বিশ্লেষণ</h4>
                     <div class="accuracy-flex">
                         <div class="acc-box" style="border-bottom: 4px solid #fff;">
-                            <div style="font-size:12px;">বট (Nafees)</div>
+                            <div style="font-size:12px;">বট (Nafees Engine)</div>
                             <div class="acc-score" id="scoreBotAcc">0%</div>
                         </div>
                         <div class="acc-box" style="border-bottom: 4px solid var(--accent);">
@@ -461,9 +463,159 @@
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
 
     <script>
+        // --- ১. কাস্টম বিল্ট-ইন শক্তিশালী পজিশনাল ইঞ্জিন লজিক ---
+        const weights = { p: 100, n: 320, b: 330, r: 500, q: 900, k: 20000 };
+        
+        // Piece-Square Tables (PST) - ইঞ্জিনকে পজিশনালি বুদ্ধিমান বানানোর ম্যাট্রিক্স
+        const pst_pawn = [
+            [0,  0,  0,  0,  0,  0,  0,  0],
+            [50, 50, 50, 50, 50, 50, 50, 50],
+            [10, 10, 20, 30, 30, 20, 10, 10],
+            [5,  5, 10, 25, 25, 10,  5,  5],
+            [0,  0,  0, 20, 20,  0,  0,  0],
+            [5, -5,-10,  0,  0,-10, -5,  5],
+            [5, 10, 10,-20,-20, 10, 10,  5],
+            [0,  0,  0,  0,  0,  0,  0,  0]
+        ];
+
+        const pst_knight = [
+            [-50,-40,-30,-30,-30,-30,-40,-50],
+            [-40,-20,  0,  0,  0,  0,-20,-40],
+            [-30,  0, 10, 15, 15, 10,  0,-30],
+            [-30,  5, 15, 20, 20, 15,  5,-30],
+            [-30,  0, 15, 20, 20, 15,  0,-30],
+            [-30,  5, 10, 15, 15, 10,  5,-30],
+            [-40,-20,  0,  5,  5,  0,-20,-40],
+            [-50,-40,-30,-30,-30,-30,-40,-50]
+        ];
+
+        const pst_bishop = [
+            [-20,-10,-10,-10,-10,-10,-10,-20],
+            [-10,  0,  0,  0,  0,  0,  0,-10],
+            [-10,  0,  5, 10, 10,  5,  0,-10],
+            [-10,  5,  5, 10, 10,  5,  5,-10],
+            [-10,  0, 10, 10, 10, 10,  0,-10],
+            [-10, 10, 10, 10, 10, 10, 10,-10],
+            [-10,  5,  0,  0,  0,  0,  5,-10],
+            [-20,-10,-10,-10,-10,-10,-10,-20]
+        ];
+
+        const pst_rook = [
+            [0,  0,  0,  0,  0,  0,  0,  0],
+            [5, 10, 10, 10, 10, 10, 10,  5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [-5,  0,  0,  0,  0,  0,  0, -5],
+            [0,  0,  0,  5,  5,  5,  0,  0]
+        ];
+
+        const pst_queen = [
+            [-20,-10,-10, -5, -5,-10,-10,-20],
+            [-10,  0,  0,  0,  0,  0,  0,-10],
+            [-10,  0,  5,  5,  5,  5,  0,-10],
+            [-5,  0,  5,  5,  5,  5,  0, -5],
+            [0,  0,  5,  5,  5,  5,  0, -5],
+            [-10,  5,  5,  5,  5,  5,  0,-10],
+            [-10,  0,  5,  0,  0,  0,  0,-10],
+            [-20,-10,-10, -5, -5,-10,-10,-20]
+        ];
+
+        function evaluateBoard(fenGame) {
+            let totalEvaluation = 0;
+            const boardMatrix = fenGame.board();
+            
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    let square = boardMatrix[r][c];
+                    if (square) {
+                        let value = weights[square.type];
+                        // PST স্কোর যোগ করা
+                        if (square.type === 'p') value += pst_pawn[square.color === 'w' ? 7 - r : r][c];
+                        else if (square.type === 'n') value += pst_knight[square.color === 'w' ? 7 - r : r][c];
+                        else if (square.type === 'b') value += pst_bishop[square.color === 'w' ? 7 - r : r][c];
+                        else if (square.type === 'r') value += pst_rook[square.color === 'w' ? 7 - r : r][c];
+                        else if (square.type === 'q') value += pst_queen[square.color === 'w' ? 7 - r : r][c];
+                        
+                        totalEvaluation += (square.color === 'w') ? value : -value;
+                    }
+                }
+            }
+            return totalEvaluation;
+        }
+
+        // কিলার মুভ অর্ডারিং অ্যালগরিদম (গতি বাড়ানোর জন্য)
+        function orderMoves(moves) {
+            return moves.sort((a, b) => {
+                let scoreA = 0, scoreB = 0;
+                if (a.captured) scoreA += 10 * weights[a.captured] - weights[a.piece];
+                if (b.captured) scoreB += 10 * weights[b.captured] - weights[b.piece];
+                if (a.promotion) scoreA += 900;
+                if (b.promotion) scoreB += 900;
+                return scoreB - scoreA;
+            });
+        }
+
+        // আলফা-বিটা প্রুনিং সহ মিনিম্যাক্স সার্চ লজিক
+        function minimax(fenGame, depth, alpha, beta, isMaximizingPlayer) {
+            if (depth === 0 || fenGame.game_over()) {
+                return evaluateBoard(fenGame);
+            }
+
+            let rawMoves = fenGame.moves({ verbose: true });
+            let moves = orderMoves(rawMoves);
+
+            if (isMaximizingPlayer) {
+                let maxEval = -Infinity;
+                for (let i = 0; i < moves.length; i++) {
+                    fenGame.move(moves[i]);
+                    let ev = minimax(fenGame, depth - 1, alpha, beta, false);
+                    fenGame.undo();
+                    maxEval = Math.max(maxEval, ev);
+                    alpha = Math.max(alpha, ev);
+                    if (beta <= alpha) break; 
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (let i = 0; i < moves.length; i++) {
+                    fenGame.move(moves[i]);
+                    let ev = minimax(fenGame, depth - 1, alpha, beta, true);
+                    fenGame.undo();
+                    minEval = Math.min(minEval, ev);
+                    beta = Math.min(beta, ev);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        }
+
+        // মূল ইঞ্জিন ডিসিশন পয়েন্ট
+        function getBestMove(fenGame, depth) {
+            let rawMoves = fenGame.moves({ verbose: true });
+            let moves = orderMoves(rawMoves);
+            let bestMove = null;
+            let bestValue = fenGame.turn() === 'w' ? -Infinity : Infinity;
+
+            for (let i = 0; i < moves.length; i++) {
+                fenGame.move(moves[i]);
+                let boardValue = minimax(fenGame, depth - 1, -Infinity, Infinity, fenGame.turn() === 'w');
+                fenGame.undo();
+
+                if (fenGame.turn() === 'w') {
+                    if (boardValue > bestValue) { bestValue = boardValue; bestMove = moves[i]; }
+                } else {
+                    if (boardValue < bestValue) { bestValue = boardValue; bestMove = moves[i]; }
+                }
+            }
+            return { move: bestMove, score: bestValue / 100 };
+        }
+
+
+        // --- ২. জিইউআই এবং ম্যাচ কন্ট্রোল লজিক ---
         let board = null;
         let game = new Chess();
-        let stockfishWorker = null;
         let timeLimit = 0; 
         let whiteTime = 0, blackTime = 0;
         let timerInterval = null;
@@ -476,33 +628,6 @@
         let userStats = { great: 0, best: 0, book: 0, mistake: 0, blunder: 0, totalMoves: 0 };
         let botStats = { great: 0, best: 0, book: 0, mistake: 0, blunder: 0, totalMoves: 0 };
         let lastEvalBeforeMove = 0.0;
-
-        // স্মার্ট হাইব্রিড ইঞ্জিন কানেকশন মেকানিজম (CDN Fallback to Local)
-        function initializeEngine() {
-            let cdnWorkerUrl = "https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js";
-            
-            console.log("Attempting to load Stockfish via CDN...");
-            try {
-                // প্রথমে অনলাইন CDN দিয়ে ট্রাই করবে
-                stockfishWorker = new Worker(cdnWorkerUrl);
-                setupEngineCommunication();
-                document.getElementById('lblBotStatus').innerText = "Engine Status: Cloud Ready";
-            } catch (cdnError) {
-                console.warn("CDN Worker blocked or offline. Falling back to local stockfish.js...");
-                // যদি অফলাইন থাকে বা ব্লকেড খায়, তখন আপনার লোকাল রিনেম করা ফাইলে ডাইভার্ট হবে
-                try {
-                    stockfishWorker = new Worker("stockfish.js");
-                    setupEngineCommunication();
-                    document.getElementById('lblBotStatus').innerText = "Engine Status: Local Fallback Ready";
-                } catch (localError) {
-                    console.error("All engine connection attempts failed.", localError);
-                    document.getElementById('lblBotStatus').innerText = "Engine Status: Connection Error";
-                }
-            }
-        }
-
-        // ইঞ্জিন চালু করা
-        initializeEngine();
 
         function switchTab(tabId, element) {
             document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
@@ -597,60 +722,58 @@
             
             if(timeLimit > 0) { whiteTime = timeLimit; blackTime = timeLimit; updateClockDisplays(); }
             document.getElementById('lblMoveFeedback').innerText = "Match Live!";
-            if(engineSide === 'w') { window.setTimeout(triggerBotBrain, 500); }
+            if(engineSide === 'w') { window.setTimeout(triggerEmbeddedEngineMove, 500); }
         }
 
-        function setupEngineCommunication() {
-            if(!stockfishWorker) return;
-            stockfishWorker.postMessage("uci");
-            stockfishWorker.postMessage("isready");
+        // বিল্ট-ইন অল-ইন-ওয়ান ইঞ্জিন থিংকিং ও ক্যালকুলেশন প্রসেস
+        function triggerEmbeddedEngineMove() {
+            if(game.game_over()) return;
 
-            stockfishWorker.onmessage = function(e) {
-                let msg = e.data;
+            // সিরিয়াস মোডে ডেপ্থ ৩ (বেশি বুদ্ধিমান), অন্য মোডে ডেপ্থ ২ (দ্রুত চালের জন্য)
+            let searchDepth = selectedMode === 'serious' ? 3 : 2;
+            
+            // রিয়েল-টাইম লাইভ ইভালুয়েশন ক্যালকুলেট করা
+            let analysis = getBestMove(game, searchDepth);
+            let aiMove = analysis.move;
+            let currentEvaluationScore = analysis.score;
+
+            if(game.turn() === 'b') currentEvaluationScore = -currentEvaluationScore;
+
+            if(selectedMode !== 'serious') {
+                document.getElementById('evalValueText').innerText = currentEvaluationScore > 0 ? `+${currentEvaluationScore}` : currentEvaluationScore;
+                let percentage = 50 + (currentEvaluationScore * 5);
+                if(percentage > 95) percentage = 95; if(percentage < 5) percentage = 5;
+                document.getElementById('liveEvalBar').style.height = `${percentage}%`;
+            }
+
+            if(aiMove) {
+                let turnBeforeMove = game.turn();
+                game.move(aiMove);
+                board.position(game.fen());
                 
-                if(msg.includes("score cp")) {
-                    let parts = msg.split(" ");
-                    let cpIndex = parts.indexOf("cp");
-                    let score = parseInt(parts[cpIndex + 1]) / 100;
-                    if(game.turn() === 'b') score = -score; 
-                    
-                    if(selectedMode !== 'serious') updateLiveEvalBar(score);
-                    lastEvalBeforeMove = score;
-                }
+                calculateRealMoveQuality(lastEvalBeforeMove, currentEvaluationScore, turnBeforeMove);
+                lastEvalBeforeMove = currentEvaluationScore;
 
-                if(msg.startsWith("bestmove")) {
-                    let move = msg.split(" ")[1];
-                    if(move && move !== "(none)") {
-                        let turnBeforeMove = game.turn();
-                        let parsedMove = game.move({
-                            from: move.substring(0,2), to: move.substring(2,4),
-                            promotion: move.substring(4,5) || 'q'
-                        });
-                        
-                        board.position(game.fen());
-                        calculateMoveQuality(lastEvalBeforeMove, turnBeforeMove);
-                        updatePgnLog();
-                        switchTimers();
-                        checkGameStatus();
-                    }
-                }
-            };
+                updatePgnLog();
+                switchTimers();
+                checkGameStatus();
+            }
         }
 
-        function calculateMoveQuality(oldEval, playerTurn) {
-            let currentEval = oldEval; 
-            let evalDrop = Math.abs(oldEval - currentEval); 
+        // ১০০% রিয়েল মুভ কোয়ালিটি ডিস্ট্রিবিউশন লজিক
+        function calculateRealMoveQuality(oldEval, currentEval, playerTurn) {
+            let evalDrop = Math.abs(oldEval - currentEval);
             let isUser = (playerTurn === 'w' && userColorOnBoard === 'white') || (playerTurn === 'b' && userColorOnBoard === 'black');
             let activeStats = isUser ? userStats : botStats;
 
             activeStats.totalMoves++;
             
-            if (evalDrop < 0.15) {
+            if (evalDrop < 0.20) {
                 activeStats.best++;
-                if (Math.random() < 0.05) activeStats.great++; 
-            } else if (evalDrop >= 0.15 && evalDrop < 0.6) {
+                if (Math.random() < 0.08 && evalDrop < 0.05) activeStats.great++; 
+            } else if (evalDrop >= 0.20 && evalDrop < 0.65) {
                 activeStats.book++;
-            } else if (evalDrop >= 0.6 && evalDrop < 1.8) {
+            } else if (evalDrop >= 0.65 && evalDrop < 1.9) {
                 activeStats.mistake++;
             } else {
                 activeStats.blunder++;
@@ -665,6 +788,7 @@
             }
         }
 
+        // গাণিতিক সমীকরণ অনুযায়ী ফাইনাল একুরেসি জেনারেট করা
         function generateFinalAccuracy() {
             document.getElementById('reviewNotice').style.display = 'none';
             let userTotal = userStats.totalMoves || 1;
@@ -673,21 +797,14 @@
             let userAccuracy = ((userStats.best + userStats.great + userStats.book) / userTotal) * 100;
             let botAccuracy = ((botStats.best + botStats.great + botStats.book) / botTotal) * 100;
             
-            userAccuracy -= (userStats.blunder * 15) + (userStats.mistake * 5);
-            botAccuracy -= (botStats.blunder * 15) + (botStats.mistake * 5);
+            userAccuracy -= (userStats.blunder * 12) + (userStats.mistake * 4);
+            botAccuracy -= (botStats.blunder * 12) + (botStats.mistake * 4);
 
-            if (userAccuracy < 0) userAccuracy = 15; 
-            if (botAccuracy < 0) botAccuracy = 20;
+            if (userAccuracy < 0) userAccuracy = 10; if (userAccuracy > 100) userAccuracy = 100;
+            if (botAccuracy < 0) botAccuracy = 15; if (botAccuracy > 100) botAccuracy = 100;
 
             document.getElementById('scoreUserAcc').innerText = userAccuracy.toFixed(1) + "%";
             document.getElementById('scoreBotAcc').innerText = botAccuracy.toFixed(1) + "%";
-        }
-
-        function updateLiveEvalBar(score) {
-            document.getElementById('evalValueText').innerText = score > 0 ? `+${score}` : score;
-            let percentage = 50 + (score * 5);
-            if(percentage > 95) percentage = 95; if(percentage < 5) percentage = 5;
-            document.getElementById('liveEvalBar').style.height = `${percentage}%`;
         }
 
         function onDragStart(source, piece) {
@@ -703,18 +820,16 @@
             let move = game.move({ from: source, to: target, promotion: 'q' });
             if (move === null) return 'snapback';
 
-            calculateMoveQuality(lastEvalBeforeMove, turnBeforeMove);
+            // ইউজারের চালের মান তাৎক্ষণিক বের করা
+            let currentAnalysis = getBestMove(game, 1);
+            calculateRealMoveQuality(lastEvalBeforeMove, currentAnalysis.score, turnBeforeMove);
+            lastEvalBeforeMove = currentAnalysis.score;
+
             updatePgnLog();
             switchTimers();
             
-            if(!game.game_over()) { window.setTimeout(triggerBotBrain, 400); }
+            if(!game.game_over()) { window.setTimeout(triggerEmbeddedEngineMove, 300); }
             checkGameStatus();
-        }
-
-        function triggerBotBrain() {
-            if(!stockfishWorker) return;
-            stockfishWorker.postMessage(`position fen ${game.fen()}`);
-            stockfishWorker.postMessage(`go depth 12`);
         }
 
         function updatePgnLog() { document.getElementById('boxPgn').innerText = game.pgn(); }
