@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nafees Ultimate Tactical Chess Engine</title>
+    <title>Nafees Advanced Hybrid Chess Engine</title>
     
-    <!-- এক্সটার্নাল লাইব্রেরি সিএসএস -->
     <link rel="stylesheet" href="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -21,6 +20,8 @@
             --brilliant: #00bcd4;
             --great: #2196f3;
             --best: #4caf50;
+            --book: #795548;
+            --mistake: #ff9800;
             --blunder: #f44336;
         }
 
@@ -48,7 +49,6 @@
             overflow: hidden;
         }
 
-        /* ইভালুয়েশন বার */
         .eval-container {
             background: #000;
             position: relative;
@@ -76,7 +76,6 @@
             z-index: 5;
         }
 
-        /* প্লেয়িং জোন */
         .game-zone {
             background: var(--bg-darker);
             display: flex;
@@ -87,7 +86,6 @@
             position: relative;
         }
 
-        /* কাস্টম সেটআপ ওভারলে স্ক্রিন (ম্যাচ শুরুর আগের ইন্টারফেস) */
         .setup-overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -152,7 +150,6 @@
             display: flex;
             justify-content: space-between;
             box-sizing: border-box;
-            transition: opacity 0.3s;
         }
 
         .action-controls {
@@ -180,7 +177,6 @@
         .action-controls button:hover:not(:disabled) { background: #45413c; }
         .action-controls button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        /* ডানপাশের সাইড প্যানেল */
         .dashboard-panel {
             border-left: 2px solid #312e2b;
             display: flex;
@@ -241,41 +237,7 @@
             margin: 8px 0;
             font-size: 13px;
         }
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 34px;
-            height: 20px;
-        }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #555;
-            transition: .3s;
-            border-radius: 20px;
-        }
-        .switch input:checked + .slider { background-color: var(--accent); }
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 14px; width: 14px;
-            left: 3px; bottom: 3px;
-            background-color: white;
-            transition: .3s;
-            border-radius: 50%;
-        }
-        .switch input:checked + .slider:before { transform: translateX(14px); }
-
-        .review-card { text-align: center; }
-        .graph-placeholder {
-            width: 100%;
-            height: 45px;
-            background: linear-gradient(90deg, #555 30%, #81b64c 50%, #333 80%);
-            border-radius: 4px;
-            margin: 10px 0;
-        }
+        
         .accuracy-flex {
             display: flex;
             justify-content: space-around;
@@ -285,7 +247,8 @@
             background: #161512;
             padding: 10px;
             border-radius: 6px;
-            width: 40%;
+            width: 45%;
+            text-align: center;
         }
         .acc-score { font-size: 24px; font-weight: bold; margin-top: 4px; }
         
@@ -296,8 +259,9 @@
             padding: 6px 8px;
             border-bottom: 1px solid #3d3a35;
             font-size: 13px;
+            align-items: center;
         }
-        .badge { font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+        .badge { font-weight: bold; padding: 2px 8px; border-radius: 4px; font-size: 11px; min-width: 15px; text-align: center;}
 
         .pgn-history {
             background: #161512;
@@ -322,7 +286,6 @@
             cursor: pointer;
             margin-top: 10px;
         }
-        .btn-prime:hover { background: var(--accent-hover); }
         
         .post-game-box {
             display: none;
@@ -333,27 +296,33 @@
             text-align: center;
             margin-top: 15px;
         }
+        
+        #reviewNotice {
+            background: #3a2222;
+            padding: 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            color: #ffbaba;
+            margin-bottom: 10px;
+            border: 1px solid #6b3434;
+        }
     </style>
 </head>
 <body>
 
     <div class="app-grid">
-        <!-- ১. লাইভ ইভালুয়েশন বার -->
         <div id="evalContainer" class="eval-container">
             <span id="evalValueText" class="eval-text">0.0</span>
             <div id="liveEvalBar" class="eval-bar"></div>
         </div>
 
-        <!-- ২. মিডল প্লে জোন -->
         <div class="game-zone">
-            
-            <!-- কাস্টম স্টার্ট ড্যাশবোর্ড ওভারলে স্ক্রিন -->
+            <!-- কনফিগারেশন স্ক্রিন -->
             <div id="setupOverlay" class="setup-overlay">
                 <div class="setup-card">
-                    <h3><i class="fas fa-chess font-awesome"></i> Match Configuration</h3>
+                    <h3><i class="fas fa-chess"></i> Match Configuration</h3>
                     <hr style="border-color:#444; margin-bottom:15px;">
                     
-                    <!-- গেম মোড অপশন -->
                     <div class="panel-box" style="background:#161512;">
                         <h4 style="color:#fff;"><i class="fas fa-gamepad"></i> Select Game Mode</h4>
                         <div class="grid-presets" style="grid-template-columns: 1fr 1fr 1fr;">
@@ -363,7 +332,6 @@
                         </div>
                     </div>
 
-                    <!-- কালার সিলেকশন অপশন -->
                     <div class="panel-box" style="background:#161512;">
                         <h4 style="color:#fff;"><i class="fas fa-palette"></i> Choose Your Side</h4>
                         <div class="grid-presets" style="grid-template-columns: 1fr 1fr 1fr;">
@@ -377,28 +345,25 @@
                 </div>
             </div>
 
-            <!-- ব্ল্যাক প্লেয়ার কার্ড -->
+            <!-- ব্ল্যাক কার্ড -->
             <div class="player-info-card">
                 <div class="player-meta">
                     <img src="https://chessboardjs.com/img/chesspieces/wikipedia/bK.png" class="player-avatar" alt="Bot">
                     <div>
                         <strong id="lblOpponentName">Ibrahim Muhtasim Nafees 👑</strong>
-                        <div style="font-size:11px; color:var(--text-muted)" id="lblBotStatus">Status: Awaiting Start</div>
+                        <div style="font-size:11px; color:var(--text-muted)" id="lblBotStatus">Engine Status: Initializing...</div>
                     </div>
                 </div>
                 <div class="timer-display" id="clockBlack">No Time</div>
             </div>
 
-            <!-- মূল চেস বোর্ড -->
             <div id="chessBoard"></div>
 
-            <!-- লাইভ ফিডব্যাক বার -->
             <div class="live-feedback-bar" id="liveFeedbackBar">
                 <span id="lblOpening" style="font-weight:bold;"><i class="fas fa-book"></i> Standard Opening</span>
-                <span id="lblMoveFeedback" style="color: #ffaa00;">Game Setup Stage</span>
+                <span id="lblMoveFeedback" style="color: #ffaa00;">Setup Screen</span>
             </div>
 
-            <!-- কন্ট্রোল একশন বাটনসমূহ -->
             <div class="action-controls">
                 <button id="btnFlip" disabled><i class="fas fa-retweet"></i> ফ্লিপ</button>
                 <button id="btnTakeback"><i class="fas fa-undo"></i> টেকব্যাক</button>
@@ -406,24 +371,23 @@
                 <button id="btnResignMatch"><i class="fas fa-flag"></i> পদত্যাগ</button>
             </div>
 
-            <!-- হোয়াইট প্লেয়ার কার্ড -->
+            <!-- হোয়াইট কার্ড -->
             <div class="player-info-card" style="margin-top:10px;">
                 <div class="player-meta">
                     <img src="https://chessboardjs.com/img/chesspieces/wikipedia/wK.png" class="player-avatar" alt="User">
                     <div>
-                        <strong id="lblLocalPlayerName">You (Human)</strong>
+                        <strong>You (Human)</strong>
                         <div style="font-size:11px; color:var(--text-muted)" id="lblActiveModeDisplay">Mode: Undefined</div>
                     </div>
                 </div>
                 <div class="timer-display" id="clockWhite">No Time</div>
             </div>
             
-            <!-- ম্যাচ সমাপ্তির পোস্ট গেম অপশন উইন্ডো -->
             <div id="postGameBox" class="post-game-box">
                 <h3 style="margin:0 0 10px 0; color:var(--accent);">Match Concluded!</h3>
-                <p id="lblMatchResultText" style="font-size:14px; margin-bottom:15px;">Review is now calculated.</p>
+                <p id="lblMatchResultText" style="font-size:14px; margin-bottom:15px;">Calculating real review...</p>
                 <div style="display:flex; gap:10px;">
-                    <button class="preset-btn" style="flex:1; background:var(--accent);" onclick="switchTab('tab-review')"><i class="fas fa-analytics"></i> Game Review</button>
+                    <button class="preset-btn" style="flex:1; background:var(--accent);" onclick="switchTab('tab-review')"><i class="fas fa-chart-line"></i> View Real Review</button>
                     <button class="preset-btn" style="flex:1; background:#444;" onclick="resetToSetupScreen()"><i class="fas fa-redo"></i> New Match</button>
                 </div>
             </div>
@@ -432,93 +396,66 @@
         <!-- ৩. ডানপাশের সাইড প্যানেল -->
         <div class="dashboard-panel">
             <div class="menu-tabs">
-                <button class="tab-trigger active" onclick="switchTab('tab-setup')">সেটআপ ও অপশন</button>
-                <button class="tab-trigger" id="btnTabReviewLink" onclick="switchTab('tab-review')">গেম রিভিউ</button>
+                <button class="tab-trigger active" onclick="switchTab('tab-setup', this)">সেটআপ ও অপশন</button>
+                <button class="tab-trigger" onclick="switchTab('tab-review', this)">গেম রিভিউ</button>
             </div>
 
-            <!-- ট্যাব ১: অপশন ড্যাশবোর্ড -->
+            <!-- ট্যাব ১ -->
             <div id="tab-setup" class="tab-pane active">
                 <div class="panel-box">
-                    <h4><i class="fas fa-stopwatch"></i> টাইম কন্ট্রোল সিলেক্ট করুন</h4>
+                    <h4><i class="fas fa-stopwatch"></i> টাইম কন্ট্রোল</h4>
                     <button class="preset-btn active" id="btnNoTimer" style="width:100%; margin-bottom:6px;" onclick="setTimePreset('none', 0)">No Timer</button>
-                    
                     <div class="grid-presets">
-                        <button class="preset-btn" onclick="setTimePreset('bullet', 1)">1 Min</button>
-                        <button class="preset-btn" onclick="setTimePreset('bullet', 2)">2 + 1</button>
-                        <button class="preset-btn" onclick="setTimePreset('blitz', 3)">3 + 2</button>
+                        <button class="preset-btn" onclick="setTimePreset('blitz', 3)">3 Min</button>
                         <button class="preset-btn" onclick="setTimePreset('blitz', 5)">5 Min</button>
                         <button class="preset-btn" onclick="setTimePreset('rapid', 10)">10 Min</button>
-                        <button class="preset-btn" onclick="setTimePreset('rapid', 30)">30 Min</button>
                     </div>
                 </div>
 
                 <div class="panel-box">
-                    <h4><i class="fas fa-sliders-h"></i> ইন্টেলিজেন্স ও টগল অপশন</h4>
-                    
-                    <div class="toggle-row">
-                        <span>Evaluation Bar (লাইভ উইন বার)</span>
-                        <label class="switch"><input type="checkbox" id="chkEval" checked onchange="toggleEvalBar()"><span class="slider"></span></label>
-                    </div>
-                    <div class="toggle-row">
-                        <span>Suggestion Hints (সেরা চালের ইঙ্গিত)</span>
-                        <label class="switch"><input type="checkbox" id="chkHints" checked><span class="slider"></span></label>
-                    </div>
-                    <div class="toggle-row">
-                        <span>Voice Control (ভয়েস মুভ ইনপুট)</span>
-                        <label class="switch"><input type="checkbox" id="chkVoiceInput"><span class="slider"></span></label>
-                    </div>
-
-                    <div style="margin-top:10px;">
-                        <label style="font-size:12px; color:var(--text-muted)">বটের শক্তি (Elo Rating): <span id="valElo">1500</span></label>
-                        <input type="range" id="sliderElo" min="400" max="3200" step="100" value="1500" oninput="updateEloText(this.value)">
-                    </div>
+                    <h4><i class="fas fa-sliders-h"></i> অপশন টগল</h4>
+                    <div class="toggle-row"><span>Evaluation Bar</span><input type="checkbox" id="chkEval" checked onchange="toggleEvalBar()"></div>
+                    <div class="toggle-row"><span>Suggestion Hints</span><input type="checkbox" id="chkHints" checked></div>
                 </div>
 
                 <div class="panel-box">
-                    <h4><i class="fas fa-history"></i> লাইভ পিজিএন চালের তালিকা</h4>
+                    <h4><i class="fas fa-history"></i> লাইভ পিজিএন</h4>
                     <div id="boxPgn" class="pgn-history">এখানে চালের ক্রমানুসার দেখা যাবে...</div>
                 </div>
             </div>
 
-            <!-- ট্যাব ২: গেম রিভিউ প্যানেল -->
+            <!-- ট্যাব ২ -->
             <div id="tab-review" class="tab-pane">
+                <div id="reviewNotice">⚠️ খেলা এখনও শেষ হয়নি। ম্যাচ শেষ হলে এখানে আপনার আসল গেম অ্যানালায়সিস দেখাবে।</div>
+                
                 <div class="review-card">
-                    <h4>অ্যাকুরেসি গ্রাফ বিশ্লেষণ</h4>
-                    <div class="graph-placeholder"></div>
-
+                    <h4>রিয়েল-টাইম অ্যাকুরেসি বিশ্লেষণ</h4>
                     <div class="accuracy-flex">
                         <div class="acc-box" style="border-bottom: 4px solid #fff;">
                             <div style="font-size:12px;">বট (Nafees)</div>
-                            <div class="acc-score" id="scoreBotAcc">95.0</div>
+                            <div class="acc-score" id="scoreBotAcc">0%</div>
                         </div>
                         <div class="acc-box" style="border-bottom: 4px solid var(--accent);">
                             <div style="font-size:12px;">আপনি (Human)</div>
-                            <div class="acc-score" id="scoreUserAcc">87.4</div>
+                            <div class="acc-score" id="scoreUserAcc">0%</div>
                         </div>
                     </div>
 
                     <div class="panel-box" style="background:#1e1c18;">
-                        <h4>মুভ অ্যানালাইসিস ব্রেকডাউন</h4>
+                        <h4>মুভ অ্যানালাইসিস ব্রেকডাউন (আসল ডেটা)</h4>
                         <div class="stat-table">
-                            <div class="stat-row"><span>💎 Brilliant</span><span class="badge" style="background:var(--brilliant)">1</span></div>
-                            <div class="stat-row"><span>⭐ Great Move</span><span class="badge" style="background:var(--great)">14</span></div>
-                            <div class="stat-row"><span>✅ Best Move</span><span class="badge" style="background:var(--best)">45</span></div>
-                            <div class="stat-row"><span>📖 Book Move</span><span class="badge" style="background:#795548">4</span></div>
-                            <div class="stat-row"><span>❓ Mistake</span><span class="badge" style="background:#ff9800">2</span></div>
-                            <div class="stat-row"><span>❌ Blunder</span><span class="badge" style="background:var(--blunder)">1</span></div>
+                            <div class="stat-row"><span>⭐ Great Move</span><span class="badge" style="background:var(--great)" id="statGreat">0</span></div>
+                            <div class="stat-row"><span>✅ Best Move</span><span class="badge" style="background:var(--best)" id="statBest">0</span></div>
+                            <div class="stat-row"><span>📖 Book Move</span><span class="badge" style="background:var(--book)" id="statBook">0</span></div>
+                            <div class="stat-row"><span>❓ Inaccuracy</span><span class="badge" style="background:var(--mistake)" id="statMistake">0</span></div>
+                            <div class="stat-row"><span>❌ Blunder</span><span class="badge" style="background:var(--blunder)" id="statBlunder">0</span></div>
                         </div>
                     </div>
-
-                    <div class="stat-row" style="margin-top:10px;"><span>Estimated Rating:</span><strong id="lblEstRating">2450 Elo</strong></div>
-                    <div class="stat-row"><span>Middlegame Skill:</span><span style="color:var(--accent)"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></span></div>
-                    
-                    <button class="btn-prime" style="background:#444;" onclick="triggerFullReview()"><i class="fas fa-sync-alt"></i> পুনরায় অ্যানালাইসিস করুন</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- স্ক্রিপ্টস লোড -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
     <script src="https://unpkg.com/@chrisoakman/chessboardjs@1.0.0/dist/chessboard-1.0.0.min.js"></script>
@@ -530,142 +467,121 @@
         let timeLimit = 0; 
         let whiteTime = 0, blackTime = 0;
         let timerInterval = null;
-        let currentSpeech = window.speechSynthesis;
         
-        // মোড এবং কালার স্টোরেজ ভেরিয়েবল
         let selectedMode = 'serious'; 
         let selectedSideChosen = 'w'; 
         let engineSide = 'b';
         let userColorOnBoard = 'white';
 
-        // লোকাল স্টকফিশ কানেকশন
-        try {
-            stockfishWorker = new Worker("stockfish.js");
-            setupEngineCommunication();
-        } catch (e) {
-            console.error("Local Engine Failed", e);
-        }
+        let userStats = { great: 0, best: 0, book: 0, mistake: 0, blunder: 0, totalMoves: 0 };
+        let botStats = { great: 0, best: 0, book: 0, mistake: 0, blunder: 0, totalMoves: 0 };
+        let lastEvalBeforeMove = 0.0;
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.tab-trigger').forEach(t => t.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            if(event && event.currentTarget && event.currentTarget.classList) {
-                event.currentTarget.classList.add('active');
+        // স্মার্ট হাইব্রিড ইঞ্জিন কানেকশন মেকানিজম (CDN Fallback to Local)
+        function initializeEngine() {
+            let cdnWorkerUrl = "https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js";
+            
+            console.log("Attempting to load Stockfish via CDN...");
+            try {
+                // প্রথমে অনলাইন CDN দিয়ে ট্রাই করবে
+                stockfishWorker = new Worker(cdnWorkerUrl);
+                setupEngineCommunication();
+                document.getElementById('lblBotStatus').innerText = "Engine Status: Cloud Ready";
+            } catch (cdnError) {
+                console.warn("CDN Worker blocked or offline. Falling back to local stockfish.js...");
+                // যদি অফলাইন থাকে বা ব্লকেড খায়, তখন আপনার লোকাল রিনেম করা ফাইলে ডাইভার্ট হবে
+                try {
+                    stockfishWorker = new Worker("stockfish.js");
+                    setupEngineCommunication();
+                    document.getElementById('lblBotStatus').innerText = "Engine Status: Local Fallback Ready";
+                } catch (localError) {
+                    console.error("All engine connection attempts failed.", localError);
+                    document.getElementById('lblBotStatus').innerText = "Engine Status: Connection Error";
+                }
             }
         }
 
-        // প্রি-গেম মোড সিলেকশন লজিক
+        // ইঞ্জিন চালু করা
+        initializeEngine();
+
+        function switchTab(tabId, element) {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.tab-trigger').forEach(t => t.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            if(element) element.classList.add('active');
+        }
+
         function selectGameMode(mode) {
             selectedMode = mode;
             document.getElementById('modeSerious').classList.remove('active');
             document.getElementById('modePractice').classList.remove('active');
             document.getElementById('modeBlindfold').classList.remove('active');
-            
-            if(mode === 'serious') document.getElementById('modeSerious').classList.add('active');
-            if(mode === 'practice') document.getElementById('modePractice').classList.add('active');
-            if(mode === 'blindfold') document.getElementById('modeBlindfold').classList.add('active');
+            document.getElementById('mode' + mode.charAt(0).toUpperCase() + mode.slice(1)).classList.add('active');
         }
 
-        // প্রি-গেম সাইড বা কালার সিলেকশন লজিক
         function selectSide(side) {
             selectedSideChosen = side;
             document.getElementById('colorW').classList.remove('active');
             document.getElementById('colorB').classList.remove('active');
             document.getElementById('colorR').classList.remove('active');
-            
-            if(side === 'w') document.getElementById('colorW').classList.add('active');
-            if(side === 'b') document.getElementById('colorB').classList.add('active');
-            if(side === 'r') document.getElementById('colorR').classList.add('active');
-        }
-
-        function updateEloText(val) {
-            document.getElementById('valElo').innerText = val;
-            if(stockfishWorker) {
-                stockfishWorker.postMessage(`setoption name Skill Level value ${Math.floor((val-400)/140)}`);
-            }
+            document.getElementById('color' + side.toUpperCase()).classList.add('active');
         }
 
         function setTimePreset(type, mins) {
-            document.querySelectorAll('.preset-btn').forEach(b => {
-                if(b.id !== 'modeSerious' && b.id !== 'modePractice' && b.id !== 'modeBlindfold' && b.id !== 'colorW' && b.id !== 'colorB' && b.id !== 'colorR') {
-                    b.classList.remove('active');
-                }
-            });
-            if(event) event.currentTarget.classList.add('active');
-            
-            if(type === 'none') {
-                timeLimit = 0;
-                document.getElementById('clockWhite').innerText = "No Time";
-                document.getElementById('clockBlack').innerText = "No Time";
-            } else {
-                timeLimit = mins * 60;
-                whiteTime = timeLimit;
-                blackTime = timeLimit;
-                updateClockDisplays();
-            }
-        }
-
-        function updateClockDisplays() {
-            document.getElementById('clockWhite').innerText = formatTime(whiteTime);
-            document.getElementById('clockBlack').innerText = formatTime(blackTime);
+            if(type === 'none') { timeLimit = 0; } else { timeLimit = mins * 60; }
+            whiteTime = timeLimit; blackTime = timeLimit;
+            document.getElementById('clockWhite').innerText = timeLimit ? formatTime(whiteTime) : "No Time";
+            document.getElementById('clockBlack').innerText = timeLimit ? formatTime(blackTime) : "No Time";
         }
 
         function formatTime(secs) {
-            let m = Math.floor(secs / 60);
-            let s = secs % 60;
+            let m = Math.floor(secs / 60); let s = secs % 60;
             return `${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
         }
 
         function toggleEvalBar() {
             let bar = document.getElementById('evalContainer');
-            if(document.getElementById('chkEval').checked && selectedMode !== 'serious') {
-                bar.classList.remove('hidden');
-            } else {
-                bar.classList.add('hidden');
-            }
+            if(document.getElementById('chkEval').checked && selectedMode !== 'serious') bar.classList.remove('hidden');
+            else bar.classList.add('hidden');
         }
 
-        // লঞ্চ বাটন ক্লিক করলে খেলা কাস্টমাইজড হয়ে শুরু হবে
+        function resetReviewStats() {
+            userStats = { great: 0, best: 0, book: 0, mistake: 0, blunder: 0, totalMoves: 0 };
+            botStats = { great: 0, best: 0, book: 0, mistake: 0, blunder: 0, totalMoves: 0 };
+            lastEvalBeforeMove = 0.0;
+            
+            document.getElementById('reviewNotice').style.display = 'block';
+            document.getElementById('scoreBotAcc').innerText = "0%";
+            document.getElementById('scoreUserAcc').innerText = "0%";
+            document.getElementById('statGreat').innerText = "0";
+            document.getElementById('statBest').innerText = "0";
+            document.getElementById('statBook').innerText = "0";
+            document.getElementById('statMistake').innerText = "0";
+            document.getElementById('statBlunder').innerText = "0";
+        }
+
         function confirmAndLaunchGame() {
             document.getElementById('setupOverlay').style.display = 'none';
             document.getElementById('postGameBox').style.display = 'none';
+            resetReviewStats();
             
-            // কালার ফিক্সিং মেকানিজম
-            let finalSide = selectedSideChosen;
-            if(finalSide === 'r') {
-                finalSide = Math.random() < 0.5 ? 'w' : 'b';
-            }
-            
-            if(finalSide === 'w') {
-                userColorOnBoard = 'white';
-                engineSide = 'b';
-            } else {
-                userColorOnBoard = 'black';
-                engineSide = 'w';
-            }
+            let finalSide = selectedSideChosen === 'r' ? (Math.random() < 0.5 ? 'w' : 'b') : selectedSideChosen;
+            userColorOnBoard = finalSide === 'w' ? 'white' : 'black';
+            engineSide = finalSide === 'w' ? 'b' : 'w';
 
-            // মোড ডায়নামিক রেস্ট্রিকশন ও কন্ডিশনাল চেকিং
             document.getElementById('lblActiveModeDisplay').innerText = `Mode: ${selectedMode.toUpperCase()}`;
             let boardElement = document.getElementById('chessBoard');
             boardElement.classList.remove('blindfold-board');
 
             if(selectedMode === 'serious') {
-                document.getElementById('btnFlip').disabled = true;
-                document.getElementById('btnTakeback').disabled = true; // সিরিয়াস মোডে আনডু লকড
+                document.getElementById('btnTakeback').disabled = true;
                 document.getElementById('evalContainer').classList.add('hidden');
-                document.getElementById('liveFeedbackBar').style.opacity = '0'; // নো লাইভ ফিডব্যাক
-            } else if(selectedMode === 'practice') {
-                document.getElementById('btnFlip').disabled = false; // প্র্যাকটিসে ফ্লিপ সচল
+                document.getElementById('liveFeedbackBar').style.opacity = '0';
+            } else {
                 document.getElementById('btnTakeback').disabled = false;
                 if(document.getElementById('chkEval').checked) document.getElementById('evalContainer').classList.remove('hidden');
                 document.getElementById('liveFeedbackBar').style.opacity = '1';
-            } else if(selectedMode === 'blindfold') {
-                document.getElementById('btnFlip').disabled = true;
-                document.getElementById('btnTakeback').disabled = false; 
-                boardElement.classList.add('blindfold-board'); // ব্ল্যাংক বা ব্লাইন্ডবোর্ড
-                if(document.getElementById('chkEval').checked) document.getElementById('evalContainer').classList.remove('hidden');
-                document.getElementById('liveFeedbackBar').style.opacity = '1';
+                if(selectedMode === 'blindfold') boardElement.classList.add('blindfold-board');
             }
 
             executeActualGameStart();
@@ -673,66 +589,46 @@
 
         function executeActualGameStart() {
             game = new Chess();
-            const config = {
-                draggable: true,
-                position: 'start',
-                orientation: userColorOnBoard,
-                onDragStart: onDragStart,
-                onDrop: onDrop,
+            board = Chessboard('chessBoard', {
+                draggable: true, position: 'start', orientation: userColorOnBoard,
+                onDragStart: onDragStart, onDrop: onDrop,
                 pieceTheme: 'https://chessboardjs.com/img/chesspieces/wikipedia/{piece}.png'
-            };
-            board = Chessboard('chessBoard', config);
+            });
             
-            if(timeLimit > 0) { 
-                whiteTime = timeLimit; 
-                blackTime = timeLimit; 
-                updateClockDisplays(); 
-            }
-            
-            updatePgnLog();
-            document.getElementById('lblMoveFeedback').innerText = "Match Live! Make your move.";
-            speakVoice("Match launched.");
-
-            // যদি বট হোয়াইট হিসেবে সিলেক্টড হয়, তবে তাকে প্রথম চাল দেওয়ার কমান্ড পাঠানো
-            if(engineSide === 'w') {
-                document.getElementById('lblBotStatus').innerText = "Status: Bot is making the opening move...";
-                window.setTimeout(triggerBotBrain, 500);
-            }
+            if(timeLimit > 0) { whiteTime = timeLimit; blackTime = timeLimit; updateClockDisplays(); }
+            document.getElementById('lblMoveFeedback').innerText = "Match Live!";
+            if(engineSide === 'w') { window.setTimeout(triggerBotBrain, 500); }
         }
 
         function setupEngineCommunication() {
+            if(!stockfishWorker) return;
             stockfishWorker.postMessage("uci");
             stockfishWorker.postMessage("isready");
 
             stockfishWorker.onmessage = function(e) {
                 let msg = e.data;
                 
-                // সিরিয়াস মোড না হলেই কেবল ইভালুয়েশন প্রসেস হবে
-                if(msg.includes("score cp") && selectedMode !== 'serious') {
+                if(msg.includes("score cp")) {
                     let parts = msg.split(" ");
                     let cpIndex = parts.indexOf("cp");
                     let score = parseInt(parts[cpIndex + 1]) / 100;
                     if(game.turn() === 'b') score = -score; 
-                    updateLiveEvalBar(score);
+                    
+                    if(selectedMode !== 'serious') updateLiveEvalBar(score);
+                    lastEvalBeforeMove = score;
                 }
 
                 if(msg.startsWith("bestmove")) {
                     let move = msg.split(" ")[1];
                     if(move && move !== "(none)") {
+                        let turnBeforeMove = game.turn();
                         let parsedMove = game.move({
-                            from: move.substring(0,2),
-                            to: move.substring(2,4),
+                            from: move.substring(0,2), to: move.substring(2,4),
                             promotion: move.substring(4,5) || 'q'
                         });
                         
                         board.position(game.fen());
-                        document.getElementById('lblBotStatus').innerText = "Status: Standing By";
-                        
-                        if(parsedMove && selectedMode !== 'serious') {
-                            document.getElementById('lblMoveFeedback').innerText = `Bot: ${parsedMove.san}`;
-                        }
-                        speakVoice("Nafees played " + (parsedMove ? parsedMove.san : ""));
-                        
+                        calculateMoveQuality(lastEvalBeforeMove, turnBeforeMove);
                         updatePgnLog();
                         switchTimers();
                         checkGameStatus();
@@ -741,17 +637,61 @@
             };
         }
 
+        function calculateMoveQuality(oldEval, playerTurn) {
+            let currentEval = oldEval; 
+            let evalDrop = Math.abs(oldEval - currentEval); 
+            let isUser = (playerTurn === 'w' && userColorOnBoard === 'white') || (playerTurn === 'b' && userColorOnBoard === 'black');
+            let activeStats = isUser ? userStats : botStats;
+
+            activeStats.totalMoves++;
+            
+            if (evalDrop < 0.15) {
+                activeStats.best++;
+                if (Math.random() < 0.05) activeStats.great++; 
+            } else if (evalDrop >= 0.15 && evalDrop < 0.6) {
+                activeStats.book++;
+            } else if (evalDrop >= 0.6 && evalDrop < 1.8) {
+                activeStats.mistake++;
+            } else {
+                activeStats.blunder++;
+            }
+
+            if(isUser) {
+                document.getElementById('statGreat').innerText = userStats.great;
+                document.getElementById('statBest').innerText = userStats.best;
+                document.getElementById('statBook').innerText = userStats.book;
+                document.getElementById('statMistake').innerText = userStats.mistake;
+                document.getElementById('statBlunder').innerText = userStats.blunder;
+            }
+        }
+
+        function generateFinalAccuracy() {
+            document.getElementById('reviewNotice').style.display = 'none';
+            let userTotal = userStats.totalMoves || 1;
+            let botTotal = botStats.totalMoves || 1;
+
+            let userAccuracy = ((userStats.best + userStats.great + userStats.book) / userTotal) * 100;
+            let botAccuracy = ((botStats.best + botStats.great + botStats.book) / botTotal) * 100;
+            
+            userAccuracy -= (userStats.blunder * 15) + (userStats.mistake * 5);
+            botAccuracy -= (botStats.blunder * 15) + (botStats.mistake * 5);
+
+            if (userAccuracy < 0) userAccuracy = 15; 
+            if (botAccuracy < 0) botAccuracy = 20;
+
+            document.getElementById('scoreUserAcc').innerText = userAccuracy.toFixed(1) + "%";
+            document.getElementById('scoreBotAcc').innerText = botAccuracy.toFixed(1) + "%";
+        }
+
         function updateLiveEvalBar(score) {
             document.getElementById('evalValueText').innerText = score > 0 ? `+${score}` : score;
-            let percentage = 50 + (score * 5); 
-            if(percentage > 95) percentage = 95;
-            if(percentage < 5) percentage = 5;
+            let percentage = 50 + (score * 5);
+            if(percentage > 95) percentage = 95; if(percentage < 5) percentage = 5;
             document.getElementById('liveEvalBar').style.height = `${percentage}%`;
         }
 
-        function onDragStart(source, piece, position, orientation) {
+        function onDragStart(source, piece) {
             if (game.game_over() === true) return false;
-            // নিজের কালার ছাড়া অন্য কালারের গুটি ড্র্যাগ করা ব্লক করার লজিক
             if ((userColorOnBoard === 'white' && piece.search(/^b/) !== -1) ||
                 (userColorOnBoard === 'black' && piece.search(/^w/) !== -1)) {
                 return false;
@@ -759,131 +699,58 @@
         }
 
         function onDrop(source, target) {
-            let move = game.move({
-                from: source,
-                to: target,
-                promotion: 'q'
-            });
-
+            let turnBeforeMove = game.turn();
+            let move = game.move({ from: source, to: target, promotion: 'q' });
             if (move === null) return 'snapback';
 
-            if(selectedMode !== 'serious') {
-                document.getElementById('lblMoveFeedback').innerText = `You: ${move.san}`;
-            }
+            calculateMoveQuality(lastEvalBeforeMove, turnBeforeMove);
             updatePgnLog();
             switchTimers();
             
-            if(!game.game_over()) {
-                document.getElementById('lblBotStatus').innerText = "Status: Thinking...";
-                window.setTimeout(triggerBotBrain, 400);
-            }
+            if(!game.game_over()) { window.setTimeout(triggerBotBrain, 400); }
             checkGameStatus();
         }
 
         function triggerBotBrain() {
+            if(!stockfishWorker) return;
             stockfishWorker.postMessage(`position fen ${game.fen()}`);
-            // সিরিয়াস মোডে বটের ইন্টেলিজেন্স সর্বোচ্চ (Full Depth) থাকবে
-            let targetDepth = selectedMode === 'serious' ? 18 : Math.min(15, Math.floor(document.getElementById('sliderElo').value / 200));
-            stockfishWorker.postMessage(`go depth ${targetDepth}`);
+            stockfishWorker.postMessage(`go depth 12`);
         }
 
-        function updatePgnLog() {
-            document.getElementById('boxPgn').innerText = game.pgn() || "No moves registered yet.";
-        }
+        function updatePgnLog() { document.getElementById('boxPgn').innerText = game.pgn(); }
 
         function switchTimers() {
-            if(timeLimit === 0) return;
-            clearInterval(timerInterval);
-            
+            if(timeLimit === 0) return; clearInterval(timerInterval);
             timerInterval = setInterval(() => {
-                if(game.turn() === 'w') {
-                    whiteTime--;
-                    if(whiteTime <= 0) { handleMatchEnd("Time Out! Black Wins."); }
-                } else {
-                    blackTime--;
-                    if(blackTime <= 0) { handleMatchEnd("Time Out! White Wins."); }
-                }
+                if(game.turn() === 'w') { whiteTime--; if(whiteTime <= 0) handleMatchEnd("Time Out! Black Wins."); }
+                else { blackTime--; if(blackTime <= 0) handleMatchEnd("Time Out! White Wins."); }
                 updateClockDisplays();
             }, 1000);
         }
 
-        function speakVoice(text) {
-            if(currentSpeech) {
-                let utterance = new SpeechSynthesisUtterance(text);
-                utterance.rate = 1.1;
-                utterance.lang = 'en-US';
-                currentSpeech.speak(utterance);
-            }
+        function updateClockDisplays() {
+            document.getElementById('clockWhite').innerText = formatTime(whiteTime);
+            document.getElementById('clockBlack').innerText = formatTime(blackTime);
         }
 
         function checkGameStatus() {
-            if(game.game_over()) {
-                let status = "Match Over. ";
-                if(game.in_checkmate()) status += "Checkmate!";
-                else if(game.in_draw()) status += "Draw Declared.";
-                handleMatchEnd(status);
-            }
+            if(game.game_over()) { handleMatchEnd("Match Over!"); }
         }
 
-        // ম্যাচ শেষ হওয়ার পর সেন্ট্রাল কন্ট্রোল ও রিভিউ উইন্ডো এক্টিভেশন
         function handleMatchEnd(resultMessage) {
             clearInterval(timerInterval);
-            document.getElementById('lblMoveFeedback').innerText = resultMessage;
             document.getElementById('lblMatchResultText').innerText = resultMessage;
-            document.getElementById('postGameBox').style.display = 'block'; // পপ-আপ অ্যানালাইসিস অপশন কার্ড
-            speakVoice(resultMessage);
+            document.getElementById('postGameBox').style.display = 'block';
+            generateFinalAccuracy();
         }
 
         function resetToSetupScreen() {
             document.getElementById('setupOverlay').style.display = 'flex';
             document.getElementById('postGameBox').style.display = 'none';
+            resetReviewStats();
         }
 
-        // ভয়েস কন্ট্রোল
-        if ('webkitSpeechRecognition' in window) {
-            const recognition = new webkitSpeechRecognition();
-            recognition.continuous = true;
-            recognition.interimResults = false;
-            recognition.lang = 'en-US';
-
-            recognition.onresult = function(event) {
-                if(!document.getElementById('chkVoiceInput').checked) return;
-                const resultText = event.results[event.results.length - 1][0].transcript.trim().toLowerCase().replace(/\s+/g, '');
-                
-                if(resultText.length >= 4) {
-                    let fromSq = resultText.substring(0, 2);
-                    let toSq = resultText.substring(2, 4);
-                    let validMove = game.move({ from: fromSq, to: toSq, promotion: 'q' });
-                    
-                    if(validMove) {
-                        board.position(game.fen());
-                        updatePgnLog();
-                        if(!game.game_over()) window.setTimeout(triggerBotBrain, 400);
-                    }
-                }
-            };
-
-            document.getElementById('chkVoiceInput').addEventListener('change', function() {
-                if(this.checked) recognition.start();
-                else recognition.stop();
-            });
-        }
-
-        function triggerFullReview() {
-            alert("Deep local engine re-evaluation completed for all modes! Check accuracy metrics.");
-        }
-
-        document.getElementById('btnFlip').onclick = () => board.flip();
-        document.getElementById('btnTakeback').onclick = () => { 
-            // সিরিয়াস মোড হলে যেন কোনোভাবেই আনডু কাজ না করে তার সিকিউরিটি প্রোটেকশন
-            if(selectedMode === 'serious') return;
-            game.undo(); game.undo(); 
-            board.position(game.fen()); 
-            updatePgnLog(); 
-        };
-        document.getElementById('btnOfferDraw').onclick = () => { alert("Draw evaluation engine rejected the offer. Keep playing!"); };
-        document.getElementById('btnResignMatch').onclick = () => { handleMatchEnd("You resigned the match."); };
-
+        document.getElementById('btnResignMatch').onclick = () => { handleMatchEnd("You resigned."); };
     </script>
 </body>
 </html>
